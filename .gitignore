@@ -1,0 +1,18 @@
+# Datos personales: sesiones, claves copiadas, registros, túneles, macros...
+merlyngestorterm-data/
+nexterm-data/
+# Python
+__pycache__/
+*.pyc
+.venv/
+# Claves, capturas y registros que nunca deben subirse
+*.pem
+*.ppk
+*.key
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.pcap
+*.log
+# Paquetes generados por la publicación
+dist/

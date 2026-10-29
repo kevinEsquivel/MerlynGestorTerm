@@ -1,0 +1,4 @@
+# Lo que no forma parte del paquete descargable de cada versión
+.github export-ignore
+tests export-ignore
+.gitattributes export-ignore

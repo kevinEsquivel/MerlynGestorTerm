@@ -1,0 +1,28 @@
+name: Publicar versión
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar que la versión coincide con core.py
+        run: |
+          version="$(sed -n 's/^VERSION = "\(.*\)"/\1/p' core.py)"
+          [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "core.py dice $version y la etiqueta es $GITHUB_REF_NAME"; exit 1; }
+      - name: Empaquetar
+        run: |
+          mkdir dist
+          name="MerlynGestorTerm-${GITHUB_REF_NAME#v}"
+          git archive --format=tar.gz --prefix="$name/" -o "dist/$name.tar.gz" "$GITHUB_REF_NAME"
+          (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
+      - name: Crear la release en GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "MerlynGestorTerm ${GITHUB_REF_NAME#v}" --generate-notes

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Usado por ssh vía SSH_ASKPASS: entrega la contraseña guardada en el llavero.
+DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+exec python3 "$DIR/merlyngestorterm.py" --askpass "$@"

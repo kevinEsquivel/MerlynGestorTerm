@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Lanzador portable de MerlynGestorTerm: copia esta carpeta a cualquier sitio (o USB) y ejecútalo.
+DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+if ! python3 -c "import gi; gi.require_version('Vte','2.91')" 2>/dev/null; then
+  echo "Faltan dependencias (GTK3/VTE). Ejecuta primero: $DIR/install-deps.sh" >&2
+  exit 1
+fi
+exec python3 "$DIR/merlyngestorterm.py" "$@"

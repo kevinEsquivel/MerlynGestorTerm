@@ -1,0 +1,51 @@
+name: Reportar un error
+description: Algo no funciona como debería
+labels: [error]
+body:
+  - type: markdown
+    attributes:
+      value: "Gracias por reportarlo. **No pegues contraseñas, IPs reales ni claves privadas.**"
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: ¿Qué pasó?
+      description: Qué esperabas y qué ocurrió en su lugar.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. Abrir una sesión SSH...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de MerlynGestorTerm
+      description: Menú Ayuda → Acerca de
+      placeholder: "2.0.0"
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribución y escritorio
+      placeholder: "Ubuntu 24.04, GNOME (Wayland)"
+    validations:
+      required: true
+  - type: textarea
+    id: comprobar
+    attributes:
+      label: Salida de ./install-deps.sh --comprobar
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: terminal
+    attributes:
+      label: Errores en la terminal
+      description: Ejecuta ./merlyngestorterm desde una terminal y pega lo que aparezca.
+      render: text

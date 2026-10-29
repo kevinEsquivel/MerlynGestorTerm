@@ -1,0 +1,18 @@
+name: Proponer una mejora
+description: Una función nueva o un cambio
+labels: [mejora]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: ¿Qué problema resolvería?
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: ¿Cómo te imaginas la solución?
+  - type: input
+    id: distro
+    attributes:
+      label: Distribución donde la usarías

@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Análisis estático
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Ruff (errores de Python)
+        run: |
+          pip install ruff==0.6.9
+          ruff check --select F,E9 .
+      - name: ShellCheck
+        run: shellcheck -S warning install-deps.sh merlyngestorterm merlyngestorterm-askpass
+
+  instalador:
+    name: Instalador y pruebas (${{ matrix.imagen }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        imagen: ["debian:12", "ubuntu:24.04", "fedora:41", "archlinux:latest"]
+    container: ${{ matrix.imagen }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar dependencias con install-deps.sh
+        run: bash ./install-deps.sh -y --minimo
+      - name: Comprobar instalación
+        run: bash ./install-deps.sh --comprobar
+      - name: Pruebas funcionales
+        run: python3 tests/smoke_test.py
