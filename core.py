@@ -281,7 +281,7 @@ def new_session(**kw):
          "host": "", "port": 22, "user": "", "key": "", "jump": "", "x11": False,
          "command": "", "extra": "", "device": "/dev/ttyUSB0", "baud": 115200,
          "path": "", "url": "", "compression": False, "agent_forward": False,
-         "color": "", "log": False, "monitoring": True, "sftp": True, "profile": ""}
+         "color": "", "log": False, "monitoring": True, "sftp": True, "profile": "", "notes": ""}
     s.update(kw)
     return s
 

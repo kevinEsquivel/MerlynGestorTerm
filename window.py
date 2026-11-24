@@ -100,6 +100,18 @@ class SessionDialog(Gtk.Dialog):
         area.pack_start(types, False, False, 0)
         area.pack_start(Gtk.Separator(), False, False, 0)
 
+        # nombre y descripción arriba del todo, visibles para cualquier tipo de sesión
+        ident = Gtk.Grid(column_spacing=10, row_spacing=6, margin=8)
+        self.name = Gtk.Entry(text=self.session["name"], hexpand=True,
+                              placeholder_text="p. ej. Web producción, NAS casa…")
+        if self.session["name"] == "Nueva sesión":
+            self.name.set_text("")
+        self.notes = Gtk.Entry(text=self.session.get("notes", ""), hexpand=True,
+                               placeholder_text="Qué hay en este servidor: páginas, servicios, notas…")
+        self.attach(ident, 0, "Nombre de la conexión", self.name)
+        self.attach(ident, 1, "Descripción", self.notes)
+        area.pack_start(ident, False, False, 0)
+
         self.basic = Gtk.Grid(column_spacing=10, row_spacing=6, margin=8)
         basic_frame = Gtk.Frame(label=" Configuración básica ", margin=6)
         basic_frame.add(self.basic)
@@ -118,16 +130,14 @@ class SessionDialog(Gtk.Dialog):
         self.secret_entries = {}
         self.portable = Gtk.CheckButton(label="Copiar a la carpeta portable (convierte .ppk)")
         # marcador (comunes)
-        self.name = Gtk.Entry(text=self.session["name"], hexpand=True)
         self.group = Gtk.ComboBoxText.new_with_entry()
         for g in sorted({s.get("group", "") for s in getattr(parent, "sessions", []) if s.get("group")}):
             self.group.append_text(g)
         self.group.get_child().set_text(self.session.get("group", ""))
-        self.attach(self.mark, 0, "Nombre de la sesión", self.name)
-        self.attach(self.mark, 1, "Carpeta", self.group)
+        self.attach(self.mark, 0, "Carpeta", self.group)
         for i, key in enumerate(("color", "log")):
             self.widgets[key] = self.make(key)
-            self.attach(self.mark, i + 2, FIELD_DEFS[key][0], self.widgets[key])
+            self.attach(self.mark, i + 1, FIELD_DEFS[key][0], self.widgets[key])
 
         self.show_all()
         self.type_btns[self.session["type"] if self.session["type"] in TYPES else "ssh"].set_active(True)
@@ -266,6 +276,7 @@ class SessionDialog(Gtk.Dialog):
         if name in ("", "Nueva sesión"):
             name = s.get("host") or s.get("url") or s.get("path") or TYPE_LABELS[s["type"]]
         s["name"] = name
+        s["notes"] = self.notes.get_text().strip()
         s["group"] = self.group.get_child().get_text().strip().strip("/")
         if s.get("key") and self.portable.get_active() and not key_path(s).startswith(KEYS_DIR):
             s["key"] = import_key(key_path(s))
@@ -625,7 +636,7 @@ class MainWindow(Gtk.ApplicationWindow):
             b.connect("clicked", lambda *_, cb=cb: cb())
             top.pack_start(b, False, False, 0)
         sess.pack_start(top, False, False, 0)
-        self.store = Gtk.TreeStore(str, str, str, str)  # icono, nombre, id, carpeta
+        self.store = Gtk.TreeStore(str, str, str, str, str)  # icono, nombre, id, carpeta, tooltip
         self.filter = self.store.filter_new()
         self.filter.set_visible_func(self.visible)
         self.tree = Gtk.TreeView(model=self.filter, headers_visible=False, enable_search=False)
@@ -636,6 +647,7 @@ class MainWindow(Gtk.ApplicationWindow):
         col.add_attribute(ri, "icon-name", 0)
         col.add_attribute(rt, "text", 1)
         self.tree.append_column(col)
+        self.tree.set_tooltip_column(4)
         self.tree.connect("row-activated", self.on_row)
         self.tree.connect("button-press-event", self.on_tree_click)
         sw = Gtk.ScrolledWindow(vexpand=True)
@@ -680,7 +692,8 @@ class MainWindow(Gtk.ApplicationWindow):
             return True
         if model[it][2]:
             s = self.find(model[it][2])
-            return q in model[it][1].lower() or bool(s and q in (s.get("host") or "").lower())
+            return q in model[it][1].lower() or bool(s and (q in (s.get("host") or "").lower()
+                                                            or q in (s.get("notes") or "").lower()))
         child = model.iter_children(it)
         while child:
             if self.visible(model, child, None):
@@ -697,13 +710,16 @@ class MainWindow(Gtk.ApplicationWindow):
                 return None
             if path not in folders:
                 parent, _, name = path.rpartition("/")
-                folders[path] = self.store.append(folder(parent), ["folder", name, "", path])
+                folders[path] = self.store.append(folder(parent), ["folder", name, "", path, None])
             return folders[path]
         for g in load_json(SESSIONS_FILE + ".folders", []):
             folder(g)
         for s in sorted(self.sessions, key=lambda s: (s.get("group", ""), s["name"].lower())):
             g = s.get("group", "").strip("/")
-            self.store.append(folder(g), [TYPE_ICONS.get(s["type"], "network-server"), s["name"], s["id"], g])
+            where = ssh_target(s) if s.get("host") else s.get("url") or s.get("path")
+            tip = "\n".join(GLib.markup_escape_text(x) for x in (where, s.get("notes", "")) if x)
+            self.store.append(folder(g), [TYPE_ICONS.get(s["type"], "network-server"), s["name"], s["id"], g,
+                                          tip or None])
         self.tree.expand_all()
         self.set_status("")
 
@@ -863,6 +879,8 @@ class MainWindow(Gtk.ApplicationWindow):
             lab = Gtk.Label(xalign=0)
             lab.set_markup(f"{GLib.markup_escape_text(s['name'])}  <small>{TYPE_LABELS.get(s['type'], '')} "
                            f"{GLib.markup_escape_text(ssh_target(s) if s.get('host') else '')}</small>")
+            if s.get("notes"):
+                lab.set_tooltip_text(s["notes"])
             h.pack_start(lab, True, True, 0)
             b.add(h)
             b.connect("clicked", lambda *_, s=s: self.open_session(dict(self.find(s["id"]) or s)))
